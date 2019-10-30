@@ -1,0 +1,64 @@
+username : sravan
+password : Tqwt@OJ;o4rd0zr
+
+
+
+
+import numpy as np
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer,TfidfTransformer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
+#from sklearn.externals import joblib
+
+
+def compute(request):
+
+    """Responds to any HTTP request.
+    Args:
+        request (flask.Request): HTTP request object.
+    Returns:
+        The response text or any set of values that can be turned into a
+        Response object using
+        `make_response <http://flask.pocoo.org/docs/1.0/api/#flask.Flask.make_response>`.
+    """
+    rj = request.get_json(silent=True)
+    arr = np.array([[1,2,3],[4,2,5]])
+    asize = arr.size
+    sd = []
+    cat = []
+    for i in rj['records']:
+        sd.append(i['short_description'])
+        cat.append(i['category'])
+        
+    
+    df = pd.DataFrame()
+    df['text'] = sd
+    df['label'] = cat
+    
+    x = df['text']
+    y = df['label']
+    
+    xtrain,xtest,ytrain,ytest = train_test_split(x,y,test_size = 0.25,random_state = 42)
+    
+    countvec = CountVectorizer()
+    xtraincounts = countvec.fit_transform(xtrain)
+    tfidftrans = TfidfTransformer()
+    xtraintfidf = tfidftrans.fit_transform(xtraincounts)
+    
+    clf = MultinomialNB().fit(xtraintfidf,ytrain)
+    textclf = Pipeline([('vect',CountVectorizer()),('tfidf',TfidfTransformer()),('clf',MultinomialNB()),])
+    textclf = textclf.fit(xtrain,ytrain)
+    sc = textclf.score(xtest,ytest)
+    
+    xtest1 = ['Need access to sales DB for the West'];
+    predicted = textclf.predict(xtest1)
+    
+    d = {}
+    d['predicted'] = predicted
+    d['score'] = sc
+    
+    
+    return str(d)
